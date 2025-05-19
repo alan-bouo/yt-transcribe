@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from app.transcript import get_transcript
 import os
 from app.auth import is_token_valid, has_quota, update_quota  # 👈 Nouveau
+import requests
 
 app = FastAPI(title="YouTube Transcript API")
 
@@ -26,6 +27,16 @@ class TranscriptRequest(BaseModel):
 class TranscriptAuthRequest(BaseModel): 
     video_id: str
 
+def notify_n8n(video_id: str, token: str):
+    try:
+        requests.post("https://n8n.alanbouo.com/webhook/transcript-event", json={
+            "video_id": video_id,
+            "token": token
+        }, timeout=3)
+    except Exception as e:
+        print(f"Webhook error: {e}")
+
+
 @app.post("/transcript")
 def transcript(req: TranscriptRequest):
     proxies = {
@@ -34,6 +45,7 @@ def transcript(req: TranscriptRequest):
     }
     try:
         text = get_transcript(req.video_id, proxies=proxies)
+        notify_n8n(video_id=req.video_id, token="no-token")
         return {"video_id": req.video_id, "transcript": text}
     except Exception:
         raise HTTPException(status_code=400, detail="Erreur lors de la récupération du transcript.")
@@ -62,6 +74,7 @@ def transcript_with_auth(req: TranscriptAuthRequest, authorization: str = Header
             raise HTTPException(status_code=500, detail="Proxy configuration is missing.")
         text = get_transcript(req.video_id, proxies=proxies)
         update_quota(token)
+        notify_n8n(video_id=req.video_id, token=token)
         return {"video_id": req.video_id, "transcript": text}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
