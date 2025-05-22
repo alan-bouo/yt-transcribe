@@ -29,7 +29,7 @@ class TranscriptAuthRequest(BaseModel):
 
 def notify_n8n(video_id: str, token: str):
     try:
-        requests.post("https://n8n.alanbouo.com/webhook/transcript-event", json={
+        requests.post("https://n8n.alanbouo.com/webhook/transcript-event/WEBHOOK_URL = os.environ["N8N_WEBHOOK_URL"]", json={
             "video_id": video_id,
             "token": token
         }, timeout=3)
