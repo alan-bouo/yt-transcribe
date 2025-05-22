@@ -6,6 +6,7 @@ from app.transcript import get_transcript
 import os
 from app.auth import is_token_valid, has_quota, update_quota  # 👈 Nouveau
 import requests
+WEBHOOK_URL = os.environ["N8N_WEBHOOK_URL"]
 
 app = FastAPI(title="YouTube Transcript API")
 
@@ -29,7 +30,7 @@ class TranscriptAuthRequest(BaseModel):
 
 def notify_n8n(video_id: str, token: str):
     try:
-        requests.post("https://n8n.alanbouo.com/webhook/transcript-event/WEBHOOK_URL = os.environ["+N8N_WEBHOOK_URL+"]", json={
+        requests.post("https://n8n.alanbouo.com/webhook/transcript-event/"+WEBHOOK_URL, json={
             "video_id": video_id,
             "token": token
         }, timeout=3)
