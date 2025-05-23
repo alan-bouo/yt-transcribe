@@ -42,6 +42,7 @@ def notify_n8n(video_id: str, transcript: str, token: str):
 
 @app.post("/transcript")
 def transcript(req: TranscriptRequest):
+    print(">> Request received:", req)
     proxies = {
         "http": f"http://{req.proxy_username}:{req.proxy_password}@{req.proxy_host}:{req.proxy_port}",
         "https": f"http://{req.proxy_username}:{req.proxy_password}@{req.proxy_host}:{req.proxy_port}"
