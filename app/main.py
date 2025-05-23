@@ -28,14 +28,16 @@ class TranscriptRequest(BaseModel):
 class TranscriptAuthRequest(BaseModel): 
     video_id: str
 
-def notify_n8n(video_id: str, token: str):
+def notify_n8n(video_id: str, transcript: str, token: str):
     try:
-        requests.post("https://n8n.alanbouo.com/webhook/transcript-event/"+WEBHOOK_URL, json={
+        requests.post(f"https://n8n.alanbouo.com/webhook/transcript-event/{WEBHOOK_URL}", json={
             "video_id": video_id,
+            "transcript": transcript,
             "token": token
         }, timeout=3)
     except Exception as e:
         print(f"Webhook error: {e}")
+
 
 
 @app.post("/transcript")
@@ -46,10 +48,11 @@ def transcript(req: TranscriptRequest):
     }
     try:
         text = get_transcript(req.video_id, proxies=proxies)
-        notify_n8n(video_id=req.video_id, token="no-token")
+        notify_n8n(video_id=req.video_id, transcript=text, token="no-token")
         return {"video_id": req.video_id, "transcript": text}
     except Exception:
         raise HTTPException(status_code=400, detail="Erreur lors de la récupération du transcript.")
+
 
 @app.post("/transcript/auth")
 def transcript_with_auth(req: TranscriptAuthRequest, authorization: str = Header(None)):
@@ -65,17 +68,15 @@ def transcript_with_auth(req: TranscriptAuthRequest, authorization: str = Header
         raise HTTPException(status_code=429, detail="Quota exceeded (1/day).")
 
     try:
-        # Utilisation automatique du proxy résidentiel
-        try:
-            proxies = {
-                "http": f"http://{os.environ['PROXY_USERNAME']}:{os.environ['PROXY_PASSWORD']}@{os.environ['PROXY_HOST']}:{os.environ['PROXY_PORT']}",
-                "https": f"http://{os.environ['PROXY_USERNAME']}:{os.environ['PROXY_PASSWORD']}@{os.environ['PROXY_HOST']}:{os.environ['PROXY_PORT']}"
-            }
-        except KeyError:
-            raise HTTPException(status_code=500, detail="Proxy configuration is missing.")
+        proxies = {
+            "http": f"http://{os.environ['PROXY_USERNAME']}:{os.environ['PROXY_PASSWORD']}@{os.environ['PROXY_HOST']}:{os.environ['PROXY_PORT']}",
+            "https": f"http://{os.environ['PROXY_USERNAME']}:{os.environ['PROXY_PASSWORD']}@{os.environ['PROXY_HOST']}:{os.environ['PROXY_PORT']}"
+        }
         text = get_transcript(req.video_id, proxies=proxies)
         update_quota(token)
-        notify_n8n(video_id=req.video_id, token=token)
+        notify_n8n(video_id=req.video_id, transcript=text, token=token)
         return {"video_id": req.video_id, "transcript": text}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    
