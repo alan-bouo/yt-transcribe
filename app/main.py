@@ -51,7 +51,8 @@ def transcript(req: TranscriptRequest):
         text = get_transcript(req.video_id, proxies=proxies)
         notify_n8n(video_id=req.video_id, transcript=text, token="no-token")
         return {"video_id": req.video_id, "transcript": text}
-    except Exception:
+    except Exception as e:
+        print("❌ Transcript error:", str(e))
         raise HTTPException(status_code=400, detail="Erreur lors de la récupération du transcript.")
 
 
