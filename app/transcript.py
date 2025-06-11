@@ -1,6 +1,12 @@
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, VideoUnavailable
 import requests
 from time import sleep
+import socket
+from urllib3.exceptions import ReadTimeoutError
+
+class TimeoutException(Exception):
+    """Exception personnalisée pour gérer les timeouts"""
+    pass
 
 def check_video_exists(video_id: str, proxies: dict = None) -> bool:
     try:
@@ -25,33 +31,41 @@ def get_transcript(video_id: str, proxies: dict = None) -> str:
         if not check_video_exists(video_id, proxies):
             raise RuntimeError("Video not found or inaccessible")
             
-        # Ajouter un délai pour éviter le rate limiting
-        sleep(2)
-        
         # Essai 1 : en français
         print(f"Attempting to get transcript for video {video_id} in French")
-        transcript = YouTubeTranscriptApi.get_transcript(
-            video_id,
-            languages=["fr"],
-            proxies=proxies,
-            timeout=30  # Augmenter le timeout
-        )
-        print(f"Successfully got French transcript for video {video_id}")
-        return " ".join([t["text"] for t in transcript])
-    
+        try:
+            # Démarrer un timer pour gérer le timeout
+            socket.setdefaulttimeout(30)
+            transcript = YouTubeTranscriptApi.get_transcript(
+                video_id,
+                languages=["fr"],
+                proxies=proxies
+            )
+            print(f"Successfully got French transcript for video {video_id}")
+            return " ".join([t["text"] for t in transcript])
+        except socket.timeout:
+            print(f"Timeout occurred while getting French transcript for {video_id}")
+            raise TimeoutException("Timeout while getting transcript")
+        
     except NoTranscriptFound:
         print(f"No French transcript found for video {video_id}, trying default language")
         # Essai 2 : sans langue précisée = langue par défaut (souvent originale)
         try:
             # Ajouter un délai supplémentaire
             sleep(2)
-            transcript = YouTubeTranscriptApi.get_transcript(
-                video_id,
-                proxies=proxies,
-                timeout=30  # Augmenter le timeout
-            )
-            print(f"Successfully got default language transcript for video {video_id}")
-            return " ".join([t["text"] for t in transcript])
+            try:
+                # Démarrer un timer pour gérer le timeout
+                socket.setdefaulttimeout(30)
+                transcript = YouTubeTranscriptApi.get_transcript(
+                    video_id,
+                    proxies=proxies
+                )
+                print(f"Successfully got default language transcript for video {video_id}")
+                return " ".join([t["text"] for t in transcript])
+            except socket.timeout:
+                print(f"Timeout occurred while getting default transcript for {video_id}")
+                raise TimeoutException("Timeout while getting transcript")
+            
         except Exception as e:
             print(f"Error getting default language transcript for {video_id}: {str(e)}")
             raise RuntimeError(f"Transcript indisponible : {str(e)}")
