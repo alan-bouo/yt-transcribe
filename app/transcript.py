@@ -1,11 +1,19 @@
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, VideoUnavailable
 import requests
+from time import sleep
 
 def check_video_exists(video_id: str, proxies: dict = None) -> bool:
     try:
         # Vérifier si la vidéo existe en essayant d'accéder à sa page
         url = f"https://www.youtube.com/watch?v={video_id}"
-        response = requests.get(url, proxies=proxies, timeout=10)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
+        response = requests.get(url, headers=headers, proxies=proxies, timeout=30)
         return response.status_code == 200
     except Exception as e:
         print(f"Error checking video existence: {str(e)}")
@@ -17,12 +25,16 @@ def get_transcript(video_id: str, proxies: dict = None) -> str:
         if not check_video_exists(video_id, proxies):
             raise RuntimeError("Video not found or inaccessible")
             
+        # Ajouter un délai pour éviter le rate limiting
+        sleep(2)
+        
         # Essai 1 : en français
         print(f"Attempting to get transcript for video {video_id} in French")
         transcript = YouTubeTranscriptApi.get_transcript(
             video_id,
             languages=["fr"],
-            proxies=proxies
+            proxies=proxies,
+            timeout=30  # Augmenter le timeout
         )
         print(f"Successfully got French transcript for video {video_id}")
         return " ".join([t["text"] for t in transcript])
@@ -31,9 +43,12 @@ def get_transcript(video_id: str, proxies: dict = None) -> str:
         print(f"No French transcript found for video {video_id}, trying default language")
         # Essai 2 : sans langue précisée = langue par défaut (souvent originale)
         try:
+            # Ajouter un délai supplémentaire
+            sleep(2)
             transcript = YouTubeTranscriptApi.get_transcript(
                 video_id,
-                proxies=proxies
+                proxies=proxies,
+                timeout=30  # Augmenter le timeout
             )
             print(f"Successfully got default language transcript for video {video_id}")
             return " ".join([t["text"] for t in transcript])
