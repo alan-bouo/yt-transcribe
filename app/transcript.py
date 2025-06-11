@@ -25,11 +25,27 @@ def check_video_exists(video_id: str, proxies: dict = None) -> bool:
         print(f"Error checking video existence: {str(e)}")
         return False
 
+def check_transcript_available(video_id: str, proxies: dict = None) -> bool:
+    """Vérifie si des sous-titres sont disponibles pour la vidéo"""
+    try:
+        # Démarrer un timer pour gérer le timeout
+        socket.setdefaulttimeout(30)
+        # Vérifier si des sous-titres sont disponibles
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=proxies)
+        return len(list(transcript_list.transcripts)) > 0
+    except Exception as e:
+        print(f"Error checking transcript availability: {str(e)}")
+        return False
+
 def get_transcript(video_id: str, proxies: dict = None) -> str:
     try:
         print(f"Checking if video {video_id} exists...")
         if not check_video_exists(video_id, proxies):
             raise RuntimeError("Video not found or inaccessible")
+            
+        print(f"Checking if transcript is available for video {video_id}...")
+        if not check_transcript_available(video_id, proxies):
+            raise RuntimeError("No transcript available for this video")
             
         # Essai 1 : en français
         print(f"Attempting to get transcript for video {video_id} in French")
