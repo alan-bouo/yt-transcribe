@@ -2,7 +2,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import time
 import random
 
-def get_transcript(video_id: str):
+def get_transcript(video_id: str, proxies: dict = None):
     """Récupérer les sous-titres d'une vidéo YouTube"""
     
     try:
@@ -11,7 +11,7 @@ def get_transcript(video_id: str):
         time.sleep(delay)
         
         # Vérifier les sous-titres disponibles
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=proxies)
         
         # Essayer de récupérer le transcript en français
         try:
