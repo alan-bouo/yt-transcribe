@@ -8,6 +8,12 @@ from app.auth import is_token_valid, has_quota, update_quota  # 👈 Nouveau
 import requests
 WEBHOOK_URL = os.environ["N8N_WEBHOOK_URL"]
 
+# Vérifier que les variables d'environnement obligatoires sont présentes
+REQUIRED_ENV_VARS = ["PROXY_USERNAME", "PROXY_PASSWORD", "PROXY_HOST", "PROXY_PORT"]
+for var in REQUIRED_ENV_VARS:
+    if var not in os.environ:
+        raise RuntimeError(f"Variable d'environnement manquante: {var}")
+
 app = FastAPI(title="YouTube Transcript API")
 
 app.add_middleware(
