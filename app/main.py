@@ -20,10 +20,6 @@ app.add_middleware(
 
 class TranscriptRequest(BaseModel):
     video_id: str
-    proxy_username: str
-    proxy_password: str
-    proxy_host: str
-    proxy_port: int
 
 class TranscriptAuthRequest(BaseModel): 
     video_id: str
@@ -44,8 +40,8 @@ def notify_n8n(video_id: str, transcript: str, token: str):
 def transcript(req: TranscriptRequest):
     print(">> Request received:", req)
     proxies = {
-        "http": f"http://{req.proxy_username}:{req.proxy_password}@{req.proxy_host}:{req.proxy_port}",
-        "https": f"http://{req.proxy_username}:{req.proxy_password}@{req.proxy_host}:{req.proxy_port}"
+        "http": f"http://{os.environ['PROXY_USERNAME']}:{os.environ['PROXY_PASSWORD']}@{os.environ['PROXY_HOST']}:{os.environ['PROXY_PORT']}",
+        "https": f"http://{os.environ['PROXY_USERNAME']}:{os.environ['PROXY_PASSWORD']}@{os.environ['PROXY_HOST']}:{os.environ['PROXY_PORT']}"
     }
     try:
         text = get_transcript(req.video_id, proxies=proxies)
@@ -80,5 +76,3 @@ def transcript_with_auth(req: TranscriptAuthRequest, authorization: str = Header
         return {"video_id": req.video_id, "transcript": text}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-    
